@@ -9,20 +9,33 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+
+// Allow multiple origins via env var (comma-separated), fallback to localhost for dev
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
+  : ["http://localhost:5173", "http://localhost:3000"];
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"],
+    origin: allowedOrigins,
     credentials: true,
   })
 );
-  app.use(cookieParser());
+
+app.use(cookieParser());
+
+// Simple health check
+app.get("/", (req, res) => {
+  res.send("OK");
+});
+
 // Routes
-app.use("/api/auth", authRoutes); //ny request to /api/auth/... is forwarded to authRoutes.js.
+app.use("/api/auth", authRoutes); // any request to /api/auth/... is forwarded to authRoutes.js
 
 // Sync Database
 try {
   await sequelize.sync({ force: false });
-  console.log(" Database synced");
+  console.log("Database synced");
 } catch (error) {
   console.error("Database sync error:", error);
 }
